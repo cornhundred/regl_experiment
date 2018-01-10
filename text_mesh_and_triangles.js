@@ -16,13 +16,38 @@ text_mesh = vectorizeText('something!', {
 });
 
 var font_detail = 20;
-text_vect = vectorizeText('something!', {
+
+text_data = {};
+text_data.positions = [];
+text_data.cells = [];
+
+// first word
+////////////////
+text_vect = vectorizeText('one', {
   textAlign: 'center',
   textBaseline: 'middle',
   triangles:true,
   size:font_detail,
   font:'"Open Sans", verdana, arial, sans-serif'
 });
+
+// manually pass along data into array
+text_data.positions[0] = text_vect.positions;
+text_data.cells[0] = text_vect.cells;
+
+// // second word
+// ////////////////
+// text_vect = vectorizeText('two', {
+//   textAlign: 'center',
+//   textBaseline: 'middle',
+//   triangles:true,
+//   size:font_detail,
+//   font:'"Open Sans", verdana, arial, sans-serif'
+// });
+
+// // manually pass along data into array
+// text_data.positions[1] = text_vect.positions;
+// text_data.cells[1] = text_vect.cells;
 
 camera = require('./camera-2d')(regl, {
   xrange: [-2, 2],
@@ -63,13 +88,15 @@ const draw_text_triangles = regl({
       gl_FragColor = vec4(1, 0, 0, 1.0);
     }`,
   attributes: {
-    position: text_vect.positions,
+    // position: text_vect.positions,
+    position: text_data.positions[0],
     offset: {
       buffer: regl.buffer(offset_array),
       divisor: 1
     }
   },
-  elements: text_vect.cells,
+  // elements: text_vect.cells,
+  elements: text_data.cells[0],
   uniforms: {
     t: ({tick}) => 0.01 * tick,
 
