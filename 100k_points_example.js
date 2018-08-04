@@ -68,7 +68,7 @@ function run_viz(regl, assets) {
       uniform float radius;
 
       void main () {
-        gl_FragColor = vec4(0, 0, 0, 0.2);
+        gl_FragColor = vec4(0, 0, 0, 0.5);
       }
     `);
 
@@ -106,6 +106,8 @@ function run_viz(regl, assets) {
     if ((time - lastSwitchTime) > switchInterval) {
       lastSwitchTime = time
       inst_state++
+
+      console.log(inst_state, lastSwitchTime)
     };
 
     // pass in interpolation function as property, interp_prop
