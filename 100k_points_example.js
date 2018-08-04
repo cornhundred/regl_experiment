@@ -67,7 +67,7 @@ var vert_string = `
       // Interpolate between the two positions using the interpolate uniform
       vec2 pos = mix(pos_ini, pos_fin, interp_uni);
 
-      gl_Position = vec4(pos[0], pos[1], 0, 1);
+      gl_Position = vec4(pos[0] + radius/100.0, pos[1], 0, 1);
 
       gl_PointSize = radius;
 
