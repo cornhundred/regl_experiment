@@ -6,19 +6,6 @@ const ndarray = require('ndarray')
 const ease = require('eases/cubic-in-out')
 const regl = require('regl')()
 
-var filename = 'data/num_points.txt'
-
-require('resl')({
-  manifest:{
-    'num_points':{
-      type: 'text',
-      src: filename
-    }
-  },
-  onDone: (assets) => {
-    run_viz(regl, assets);
-  }
-})
 
 var lastSwitchTime = 0;
 var switchInterval = 5;
@@ -27,110 +14,117 @@ var inst_state = 1;
 var pointRadius = 10;
 var datasets = [];
 
-function run_viz(regl, assets) {
 
-  var num_points = parseInt(assets.num_points);
+num_points = 10000
+regl.frame( run_draw );
 
-  var blend_info = {
-      enable: true,
-      func: {
-        srcRGB: 'src alpha',
-        srcAlpha: 'src color',
-        dstRGB: 'one',
-        dstAlpha: 'one',
-        // src: 'one',
-        // dst: 'one'
-      },
-      equation: 'add',
-      color: [0, 0, 0, 0]
-    };
+function run_draw({time}){
 
-  var datasets = createDatasets();
+  // Check how long it's been since the last switch, and cycle the buffers
+  // and reset the timer if it's time for a switch:
+  if ((time - lastSwitchTime) > switchInterval) {
+    lastSwitchTime = time
+    inst_state++
 
-  var vert_string = `
-      precision mediump float;
-      attribute vec2 pos_ini, pos_fin;
-      uniform float interp_uni, radius;
-      void main () {
+    console.log(inst_state, lastSwitchTime)
+  };
 
-        // Interpolate between the two positions using the interpolate uniform
-        vec2 pos = mix(pos_ini, pos_fin, interp_uni);
-
-        gl_Position = vec4(pos[0], pos[1], 0, 1);
-
-        gl_PointSize = radius;
-
-      }`;
-
-  var frag_string = glsl(`
-      precision mediump float;
-
-      uniform float radius;
-
-      void main () {
-        gl_FragColor = vec4(0, 0, 0, 0.5);
-      }
-    `);
-
-  const drawPoints = regl({
-
-    frag: frag_string,
-
-    vert: vert_string,
-
-    attributes: {
-      // Pass two buffers between which we ease in the vertex shader:
-      // passs dataset info as attributes
-      pos_ini: datasets[inst_state % datasets.length],
-      pos_fin: datasets[(inst_state + 1) % datasets.length],
-    },
-
-    uniforms: {
-      radius: pointRadius,
-      // The current interpolation position, from 0 to 1:
-      interp_uni: (ctx, props) => Math.max(0, Math.min(1, props.interp_prop))
-    },
-    primitive: 'point',
-    count: num_points,
-    // necessary for opacity control
-    blend: blend_info
-
+  // pass in interpolation function as property, interp_prop
+  regl(draw_points_args)({
+    interp_prop: interp_fun(time)
   });
 
-  regl.frame( run_draw );
-
-  function run_draw({time}){
-
-    // Check how long it's been since the last switch, and cycle the buffers
-    // and reset the timer if it's time for a switch:
-    if ((time - lastSwitchTime) > switchInterval) {
-      lastSwitchTime = time
-      inst_state++
-
-      console.log(inst_state, lastSwitchTime)
-    };
-
-    // pass in interpolation function as property, interp_prop
-    drawPoints({
-      interp_prop: interp_fun(time)
-    });
-
-  }
-
-  function createDatasets() {
-    var datasets;
-    datasets = [phyllotaxis, grid]
-      .map(
-        function(func, i){
-          var inst_array = ndarray([], [num_points, 2]);
-          return vectorFill(inst_array, func(num_points));
-        }
-      );
-
-    return datasets;
-  }
-
 }
+
+var num_points = parseInt(num_points);
+
+var blend_info = {
+    enable: true,
+    func: {
+      srcRGB: 'src alpha',
+      srcAlpha: 'src color',
+      dstRGB: 'one',
+      dstAlpha: 'one',
+      // src: 'one',
+      // dst: 'one'
+    },
+    equation: 'add',
+    color: [0, 0, 0, 0]
+  };
+
+var datasets = create_datasets();
+
+var vert_string = `
+    precision mediump float;
+    attribute vec2 pos_ini, pos_fin;
+    uniform float interp_uni, radius;
+    void main () {
+
+      // Interpolate between the two positions using the interpolate uniform
+      vec2 pos = mix(pos_ini, pos_fin, interp_uni);
+
+      gl_Position = vec4(pos[0], pos[1], 0, 1);
+
+      gl_PointSize = radius;
+
+    }`;
+
+var frag_string = glsl(`
+    precision mediump float;
+
+    uniform float radius;
+
+    void main () {
+      gl_FragColor = vec4(0, 0, 0, 0.5);
+    }
+  `);
+
+// ES6 version is
+// interp_uni: (ctx, props) => Math.max(0, Math.min(1, props.interp_prop))
+function interpolate_uniform(ctx, props) {
+  return Math.max(0, Math.min(1, props.interp_prop));
+}
+
+
+var draw_points_args =   {
+
+  frag: frag_string,
+
+  vert: vert_string,
+
+  attributes: {
+    // Pass two buffers between which we ease in the vertex shader:
+    // passs dataset info as attributes
+    pos_ini: datasets[inst_state % datasets.length],
+    pos_fin: datasets[(inst_state + 1) % datasets.length],
+  },
+
+  uniforms: {
+    radius: pointRadius,
+    // The current interpolation position, from 0 to 1:
+    interp_uni: interpolate_uniform
+  },
+  primitive: 'point',
+  count: num_points,
+  // necessary for opacity control
+  blend: blend_info
+
+};
+
+
+function create_datasets() {
+  var datasets;
+  datasets = [phyllotaxis, grid]
+    .map(
+      function(func, i){
+        var inst_array = ndarray([], [num_points, 2]);
+        return vectorFill(inst_array, func(num_points));
+      }
+    );
+
+  return datasets;
+}
+
 
 
 function interp_fun(time){
