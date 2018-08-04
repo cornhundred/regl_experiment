@@ -7,31 +7,35 @@ const ease = require('eases/cubic-in-out')
 const regl = require('regl')()
 
 
-var lastSwitchTime = 0;
-var switchInterval = 5;
+last_switch_time = 0;
+var switch_interval = 5;
 let switchDuration = 3;
-var inst_state = 1;
-var pointRadius = 10;
+inst_state = 1;
+var point_radius = 10;
 var datasets = [];
 
-
-num_points = 10000
+num_points = 1 * 1000
 regl.frame( run_draw );
+
 
 function run_draw({time}){
 
   // Check how long it's been since the last switch, and cycle the buffers
   // and reset the timer if it's time for a switch:
-  if ((time - lastSwitchTime) > switchInterval) {
-    lastSwitchTime = time
+  var time_since_switch = time - last_switch_time
+  if ( time_since_switch > switch_interval) {
+    last_switch_time = time
     inst_state++
-
-    console.log(inst_state, lastSwitchTime)
+    console.log(time, inst_state, last_switch_time)
   };
+
+  console.log(time%10)
+  point_radius = 10 * time % 30 + 10;
 
   // pass in interpolation function as property, interp_prop
   regl(draw_points_args)({
-    interp_prop: interp_fun(time)
+    interp_prop: interp_fun(time),
+    point_radius: point_radius
   });
 
 }
@@ -79,11 +83,10 @@ var frag_string = glsl(`
     }
   `);
 
-// ES6 version is
-// interp_uni: (ctx, props) => Math.max(0, Math.min(1, props.interp_prop))
-function interpolate_uniform(ctx, props) {
-  return Math.max(0, Math.min(1, props.interp_prop));
-}
+// // ES5 version is
+// function interpolate_uniform(ctx, props) {
+//   return Math.max(0, Math.min(1, props.interp_prop));
+// }
 
 
 var draw_points_args =   {
@@ -100,9 +103,11 @@ var draw_points_args =   {
   },
 
   uniforms: {
-    radius: pointRadius,
+    radius: regl.prop('point_radius'),
+    // radius: point_radius,
     // The current interpolation position, from 0 to 1:
-    interp_uni: interpolate_uniform
+    interp_uni: (ctx, props) => Math.max(0, Math.min(1, props.interp_prop))
+    // interp_uni: interpolate_uniform
   },
   primitive: 'point',
   count: num_points,
@@ -128,7 +133,7 @@ function create_datasets() {
 
 
 function interp_fun(time){
-  return ease((time - lastSwitchTime) / switchDuration)
+  return ease((time - last_switch_time) / switchDuration)
 }
 
 function phyllotaxis (n) {
