@@ -29,7 +29,7 @@ function run_draw({time}){
     console.log(time, inst_state, last_switch_time)
   };
 
-  console.log(time%10)
+  // console.log(time%10)
   point_radius = 10 * time % 30 + 10;
 
   // pass in interpolation function as property, interp_prop
