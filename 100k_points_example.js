@@ -16,6 +16,7 @@ var datasets = [];
 
 num_points = 1 * 1000
 regl.frame( run_draw );
+run_switch = false;
 
 
 function run_draw({time}){
@@ -23,14 +24,19 @@ function run_draw({time}){
   // Check how long it's been since the last switch, and cycle the buffers
   // and reset the timer if it's time for a switch:
   var time_since_switch = time - last_switch_time
-  if ( time_since_switch > switch_interval) {
+
+  // if ( time_since_switch > switch_interval) {
+  if (run_switch){
+    run_switch = false;
     last_switch_time = time
     inst_state++
     console.log(time, inst_state, last_switch_time)
   };
 
-  // console.log(time%10)
-  point_radius = 10 * time % 30 + 10;
+  // // variable radius
+  // point_radius = 10 * time % 30 + 10;
+  // fixed radius
+  point_radius = 10;
 
   // pass in interpolation function as property, interp_prop
   regl(draw_points_args)({
@@ -67,7 +73,8 @@ var vert_string = `
       // Interpolate between the two positions using the interpolate uniform
       vec2 pos = mix(pos_ini, pos_fin, interp_uni);
 
-      gl_Position = vec4(pos[0] + radius/100.0, pos[1], 0, 1);
+      // gl_Position = vec4(pos[0] + radius/100.0, pos[1], 0, 1);
+      gl_Position = vec4(pos[0], pos[1], 0, 1);
 
       gl_PointSize = radius;
 
@@ -133,7 +140,9 @@ function create_datasets() {
 
 
 function interp_fun(time){
-  return ease((time - last_switch_time) / switchDuration)
+  inst_ease = ease((time - last_switch_time) / switchDuration);
+  // console.log(inst_ease);
+  return inst_ease;
 }
 
 function phyllotaxis (n) {
